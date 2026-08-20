@@ -166,3 +166,69 @@ async function handleSubmit(e) {
     if (!res.ok || !body.success) throw new Error(body.error || 'Failed to save employee');
 
     closePanel();
+    showToast(id ? 'Employee updated' : 'Employee added');
+    await loadEmployees();
+  } catch (err) {
+    formError.textContent = err.message;
+    formError.hidden = false;
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Save employee';
+  }
+}
+
+function openConfirm(emp) {
+  pendingDeleteId = emp._id;
+  confirmName.textContent = `${emp.name} — ${emp.department}`;
+  confirmOverlay.classList.add('show');
+  confirmBox.classList.add('show');
+  confirmBox.setAttribute('aria-hidden', 'false');
+}
+
+function closeConfirm() {
+  pendingDeleteId = null;
+  confirmOverlay.classList.remove('show');
+  confirmBox.classList.remove('show');
+  confirmBox.setAttribute('aria-hidden', 'true');
+}
+
+async function handleDeleteConfirmed() {
+  if (!pendingDeleteId) return;
+  const id = pendingDeleteId;
+  closeConfirm();
+
+  try {
+    const res = await fetch(`${API_BASE}/${id}`, { method: 'DELETE' });
+    const body = await res.json();
+    if (!res.ok || !body.success) throw new Error(body.error || 'Failed to remove employee');
+
+    showToast('Employee removed');
+    await loadEmployees();
+  } catch (err) {
+    showToast(err.message || 'Failed to remove employee', true);
+  }
+}
+
+function setLoading(isLoading) {
+  loadingStateEl.hidden = !isLoading || employees.length > 0;
+}
+
+function setStatus(text, isError) {
+  statusLineEl.textContent = text;
+  statusLineEl.style.color = isError ? '#a24b4b' : '';
+}
+
+let toastTimer;
+function showToast(message, isError) {
+  clearTimeout(toastTimer);
+  toastEl.textContent = message;
+  toastEl.classList.toggle('error', Boolean(isError));
+  toastEl.classList.add('show');
+  toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2600);
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str ?? '';
+  return div.innerHTML;
+}
