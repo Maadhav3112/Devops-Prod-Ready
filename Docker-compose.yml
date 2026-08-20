@@ -1,0 +1,31 @@
+version: "3.9"
+
+services:
+  employee-app-thikse:
+    build: .
+    image: raiden004/employee-api:latest
+    container_name: employee-api
+    ports:
+      - "9500:3000"
+    environment:
+      - PORT=3000
+      - MONGO_URI=mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@mongo:27017/employeedb?authSource=admin
+    depends_on:
+      - mongo
+    restart: unless-stopped
+
+  mongo:
+    build: ./mongo-dockerfile
+    image: raiden004/employee-mongo:latest
+    container_name: employee-mongo
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USER}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD}
+    ports:
+      - "20000:27017"
+    volumes:
+      - mongo-data:/data/db
+    restart: unless-stopped
+
+volumes:
+  mongo-data:

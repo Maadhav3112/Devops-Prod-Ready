@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Roster — Employee Directory</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">R</span>
+      <div class="brand-text">
+        <h1>Roster</h1>
+        <p>Employee directory</p>
+      </div>
+    </div>
+
+    <div class="stamp" id="stamp" aria-hidden="true">
+      <span id="stampCount">0</span>
+      <small>on record</small>
+    </div>
+
+    <button class="btn btn-primary" id="openAddBtn">Add employee</button>
+  </header>
+
+  <main class="page">
+
+    <div class="toolbar">
+      <input
+        type="search"
+        id="searchInput"
+        class="search"
+        placeholder="Search by name, department, or role…"
+        autocomplete="off"
+      />
+      <div class="status" id="statusLine"></div>
+    </div>
+
+    <section class="ledger-wrap">
+      <table class="ledger">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Department</th>
+            <th>Role</th>
+            <th class="num">Salary</th>
+            <th class="col-actions"></th>
+          </tr>
+        </thead>
+        <tbody id="employeeRows">
+          <!-- rows injected by script.js -->
+        </tbody>
+      </table>
+
+      <div class="empty-state" id="emptyState" hidden>
+        <p class="empty-title">No records yet</p>
+        <p class="empty-sub">Add your first employee to start the roster.</p>
+      </div>
+
+      <div class="loading-state" id="loadingState">
+        <p>Loading roster…</p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Slide-over panel: add / edit -->
+  <div class="overlay" id="overlay"></div>
+  <aside class="panel" id="panel" aria-hidden="true">
+    <div class="panel-head">
+      <h2 id="panelTitle">Add employee</h2>
+      <button class="icon-btn" id="closePanelBtn" aria-label="Close">&times;</button>
+    </div>
+
+    <form id="employeeForm" class="panel-form">
+      <input type="hidden" id="employeeId" />
+
+      <label class="field">
+        <span>Full name</span>
+        <input type="text" id="fieldName" required placeholder="Jane Doe" />
+      </label>
+
+      <label class="field">
+        <span>Email</span>
+        <input type="email" id="fieldEmail" required placeholder="jane@company.com" />
+      </label>
+
+      <label class="field">
+        <span>Department</span>
+        <input type="text" id="fieldDepartment" required placeholder="Engineering" />
+      </label>
+
+      <label class="field">
+        <span>Role</span>
+        <input type="text" id="fieldRole" placeholder="Backend Developer" />
+      </label>
+
+      <label class="field">
+        <span>Salary</span>
+        <input type="number" id="fieldSalary" min="0" step="1000" placeholder="75000" />
+      </label>
+
+      <div class="form-error" id="formError" hidden></div>
+
+      <div class="panel-actions">
+        <button type="button" class="btn btn-ghost" id="cancelBtn">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="submitBtn">Save employee</button>
+      </div>
+    </form>
+  </aside>
+
+  <!-- Confirm delete -->
+  <div class="overlay" id="confirmOverlay"></div>
+  <div class="confirm-box" id="confirmBox" aria-hidden="true">
+    <p class="confirm-title">Remove this employee?</p>
+    <p class="confirm-sub" id="confirmName"></p>
+    <div class="confirm-actions">
+      <button class="btn btn-ghost" id="cancelDeleteBtn">Cancel</button>
+      <button class="btn btn-danger" id="confirmDeleteBtn">Remove</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>

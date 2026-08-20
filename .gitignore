@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Environment / secrets — NEVER commit real .env
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Test coverage
+coverage/
+
+# Editor
+.vscode/
+.idea/
