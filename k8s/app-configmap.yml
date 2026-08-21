@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: employee-app-config
+  namespace: employee-management-app
+data:
+  PORT: "3000"
