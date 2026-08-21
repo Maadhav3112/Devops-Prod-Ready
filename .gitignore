@@ -22,5 +22,5 @@ coverage/
 .idea/
 
 # MongoDB secrets
- k8s/mongo-secret.local.yaml
- k8s/app-secret.local.yaml
+ k8s/mongo-secret.yaml
+ k8s/app-secret.yaml
