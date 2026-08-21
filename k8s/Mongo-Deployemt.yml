@@ -29,4 +29,3 @@ spec:
                 secretKeyRef:
                   name: mongo-secret
                   key: MONGO_ROOT_PASSWORD
-          
