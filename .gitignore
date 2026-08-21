@@ -20,3 +20,7 @@ coverage/
 # Editor
 .vscode/
 .idea/
+
+# MongoDB secrets
+ k8s/mongo-secret.local.yaml
+ k8s/app-secret.local.yaml
