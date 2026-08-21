@@ -1,10 +1,12 @@
-# .gitlab-ci.yml
 stages:
   - install
   - test
-  - build
+  - build-application
+  - build-docker-image
+
 variables:
   DOCKER_IMAGE: raiden004/employee-api
+
 install_dependencies:
   stage: install
   image: node:20-alpine
@@ -13,14 +15,23 @@ install_dependencies:
   cache:
     paths:
       - node_modules/
+
 run_tests:
   stage: test
   image: node:20-alpine
   script:
     - npm install
     - npm test
+
+build_application:
+  stage: build-application
+  image: node:20-alpine
+  script:
+    - npm install
+    - node -c server.js  # syntax-check the entry file
+
 build_docker_image:
-  stage: build
+  stage: build-docker-image
   image: docker:24
   services:
     - docker:24-dind
