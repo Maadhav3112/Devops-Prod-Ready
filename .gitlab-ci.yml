@@ -1,0 +1,32 @@
+# .gitlab-ci.yml
+stages:
+  - install
+  - test
+  - build
+variables:
+  DOCKER_IMAGE: raiden004/employee-api
+install_dependencies:
+  stage: install
+  image: node:20-alpine
+  script:
+    - npm install
+  cache:
+    paths:
+      - node_modules/
+run_tests:
+  stage: test
+  image: node:20-alpine
+  script:
+    - npm install
+    - npm test
+build_docker_image:
+  stage: build
+  image: docker:24
+  services:
+    - docker:24-dind
+  script:
+    - echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USER" --password-stdin
+    - docker build -t $DOCKER_IMAGE:latest .
+    - docker push $DOCKER_IMAGE:latest
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
