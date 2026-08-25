@@ -22,5 +22,5 @@ coverage/
 .idea/
 
 # MongoDB secrets
-k8s/Mongo-secrets.yml
-k8s/App-secrets.yml
+kubernetes/Mongo-secrets.yml
+kubernetes/App-secrets.yml
