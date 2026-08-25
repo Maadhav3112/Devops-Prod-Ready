@@ -1,71 +1,83 @@
 const express = require('express');
 const router = express.Router();
+const { body, validationResult } = require('express-validator');
 const Employee = require('../models/Employee');
+const { AppError, asyncHandler } = require('../middleware/errorHandler');
+const logger = require('../config/logger');
 
-// POST /api/employees — Create a new employee
-router.post('/', async (req, res) => {
-  try {
+// Reusable validation rules
+const employeeValidationRules = [
+  body('name').trim().notEmpty().withMessage('Name is required'),
+  body('email').trim().isEmail().withMessage('A valid email is required'),
+  body('department').trim().notEmpty().withMessage('Department is required'),
+  body('salary').optional().isFloat({ min: 0 }).withMessage('Salary must be a positive number'),
+];
+
+function checkValidation(req, res, next) {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ success: false, error: errors.array()[0].msg });
+  }
+  next();
+}
+
+// POST /api/employees — Create
+router.post(
+  '/',
+  employeeValidationRules,
+  checkValidation,
+  asyncHandler(async (req, res) => {
     const { name, email, department, role, salary } = req.body;
     const employee = await Employee.create({ name, email, department, role, salary });
+    logger.info('Employee created', { id: employee._id.toString() });
     res.status(201).json({ success: true, data: employee });
-  } catch (err) {
-    if (err.code === 11000) {
-      return res.status(409).json({ success: false, error: 'Email already exists' });
-    }
-    res.status(400).json({ success: false, error: err.message });
-  }
-});
+  })
+);
 
-// GET /api/employees — List all employees
-router.get('/', async (req, res) => {
-  try {
+// GET /api/employees — List all
+router.get(
+  '/',
+  asyncHandler(async (req, res) => {
     const employees = await Employee.find().sort({ createdAt: -1 });
     res.status(200).json({ success: true, count: employees.length, data: employees });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
+  })
+);
 
-// GET /api/employees/:id — Get a single employee
-router.get('/:id', async (req, res) => {
-  try {
+// GET /api/employees/:id — Get one
+router.get(
+  '/:id',
+  asyncHandler(async (req, res) => {
     const employee = await Employee.findById(req.params.id);
-    if (!employee) {
-      return res.status(404).json({ success: false, error: 'Employee not found' });
-    }
+    if (!employee) throw new AppError('Employee not found', 404);
     res.status(200).json({ success: true, data: employee });
-  } catch (err) {
-    res.status(400).json({ success: false, error: 'Invalid employee ID' });
-  }
-});
+  })
+);
 
-// PUT /api/employees/:id — Update an employee
-router.put('/:id', async (req, res) => {
-  try {
+// PUT /api/employees/:id — Update
+router.put(
+  '/:id',
+  employeeValidationRules,
+  checkValidation,
+  asyncHandler(async (req, res) => {
     const employee = await Employee.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true,
     });
-    if (!employee) {
-      return res.status(404).json({ success: false, error: 'Employee not found' });
-    }
+    if (!employee) throw new AppError('Employee not found', 404);
+    logger.info('Employee updated', { id: employee._id.toString() });
     res.status(200).json({ success: true, data: employee });
-  } catch (err) {
-    res.status(400).json({ success: false, error: err.message });
-  }
-});
+  })
+);
 
-// DELETE /api/employees/:id — Delete an employee
-router.delete('/:id', async (req, res) => {
-  try {
+// DELETE /api/employees/:id — Delete
+router.delete(
+  '/:id',
+  asyncHandler(async (req, res) => {
     const employee = await Employee.findByIdAndDelete(req.params.id);
-    if (!employee) {
-      return res.status(404).json({ success: false, error: 'Employee not found' });
-    }
+    if (!employee) throw new AppError('Employee not found', 404);
+    logger.info('Employee deleted', { id: req.params.id });
     res.status(200).json({ success: true, data: {} });
-  } catch (err) {
-    res.status(400).json({ success: false, error: 'Invalid employee ID' });
-  }
-});
+  })
+);
 
 module.exports = router;

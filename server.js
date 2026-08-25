@@ -1,22 +1,32 @@
 require('dotenv').config();
-const path = require('path');
 const express = require('express');
+const mongoose = require('mongoose');
+const path = require('path');
 const connectDB = require('./config/db');
+const logger = require('./config/logger');
 const employeeRoutes = require('./routes/employees');
+const { errorHandler } = require('./middleware/errorHandler');
+
+// Fail fast if required env vars are missing — better to crash at startup
+// than fail mysteriously on the first request.
+const requiredEnvVars = ['MONGO_URI'];
+const missing = requiredEnvVars.filter((key) => !process.env[key]);
+if (missing.length > 0) {
+  logger.error('Missing required environment variables', { missing });
+  process.exit(1);
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
-// Health check — used by Docker HEALTHCHECK and Kubernetes liveness/readiness probes
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok' });
+// Basic request logging
+app.use((req, res, next) => {
+  logger.info('Request received', { method: req.method, path: req.originalUrl });
+  next();
 });
 
-app.use('/api/employees', employeeRoutes);
-
-// Frontend — static roster UI served from /public
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/api', (req, res) => {
@@ -24,36 +34,80 @@ app.get('/api', (req, res) => {
     message: 'Employee Management API is running',
     endpoints: {
       health: 'GET /health',
+      liveness: 'GET /health/live',
+      readiness: 'GET /health/ready',
       employees: 'GET|POST /api/employees',
       employeeById: 'GET|PUT|DELETE /api/employees/:id',
     },
   });
 });
 
-// 404 handler
+// Liveness — "is the process alive?" Always returns 200 if Express is running.
+// Kubernetes uses this to decide whether to RESTART the container.
+app.get('/health/live', (req, res) => {
+  res.status(200).json({ status: 'alive' });
+});
+
+// Readiness — "can this instance actually serve traffic right now?"
+// Checks the real dependency (MongoDB). Kubernetes uses this to decide
+// whether to SEND TRAFFIC to this Pod — a live-but-not-ready Pod gets
+// removed from the Service's rotation without being restarted.
+app.get('/health/ready', (req, res) => {
+  const dbState = mongoose.connection.readyState; // 1 = connected
+  if (dbState === 1) {
+    res.status(200).json({ status: 'ready', db: 'connected' });
+  } else {
+    res.status(503).json({ status: 'not ready', db: 'disconnected' });
+  }
+});
+
+// Kept for backward compatibility with Day 1/2 setup (Docker HEALTHCHECK, etc.)
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+
+app.use('/api/employees', employeeRoutes);
+
 app.use((req, res) => {
   res.status(404).json({ success: false, error: 'Route not found' });
 });
 
-// Generic error handler
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ success: false, error: 'Internal server error' });
-});
+// Centralized error handler — must be registered last
+app.use(errorHandler);
+
+let server;
 
 async function start() {
   try {
     await connectDB();
-    app.listen(PORT, () => {
-      console.log(`Server listening on port ${PORT}`);
+    server = app.listen(PORT, () => {
+      logger.info('Server started', { port: PORT });
     });
   } catch (err) {
-    console.error('Failed to start server:', err.message);
+    logger.error('Failed to start server', { error: err.message });
     process.exit(1);
   }
 }
 
-// Only auto-start when run directly (`node server.js`), not when imported by tests.
+// Graceful shutdown — finish in-flight requests before exiting,
+// and close the DB connection cleanly. Matters for Kubernetes,
+// which sends SIGTERM before killing a Pod during scaling/rollout.
+function shutdown(signal) {
+  logger.info('Shutdown signal received', { signal });
+  if (server) {
+    server.close(async () => {
+      await mongoose.connection.close();
+      logger.info('Server closed gracefully');
+      process.exit(0);
+    });
+  } else {
+    process.exit(0);
+  }
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
+
 if (require.main === module) {
   start();
 }
