@@ -1,0 +1,126 @@
+stages:
+  - install
+  - lint
+  - test
+  - security_scan
+  - build
+  - docker_build
+  - image_scan
+  - container_test
+  - registry
+
+variables:
+  DOCKER_IMAGE: raiden004/employee-api
+  APP_DIR: application
+
+# ---------- DEPENDENCY INSTALLATION ----------
+install_dependencies:
+  stage: install
+  image: node:20-alpine
+  script:
+    - cd $APP_DIR
+    - npm install
+  cache:
+    paths:
+      - $APP_DIR/node_modules/
+
+# ---------- LINT ----------
+run_lint:
+  stage: lint
+  image: node:20-alpine
+  script:
+    - cd $APP_DIR
+    - npm install
+    - npm run lint
+  allow_failure: true
+
+# ---------- UNIT TESTS ----------
+run_tests:
+  stage: test
+  image: node:20-alpine
+  variables:
+    MONGO_URI: "mongodb://fake:fake@fake:27017/test"
+  script:
+    - cd $APP_DIR
+    - npm install
+    - npm test
+
+# ---------- SECURITY SCAN (dependencies + secrets) ----------
+dependency_scan:
+  stage: security_scan
+  image: node:20-alpine
+  script:
+    - cd $APP_DIR
+    - npm audit --audit-level=high
+  allow_failure: true
+
+secret_detection:
+  stage: security_scan
+  image: zricethezav/gitleaks:latest
+  script:
+    - gitleaks detect --source . --verbose --no-git
+  allow_failure: true
+
+# ---------- BUILD (application-level syntax/build check) ----------
+build_application:
+  stage: build
+  image: node:20-alpine
+  script:
+    - cd $APP_DIR
+    - npm install
+    - node -c server.js
+
+# ---------- DOCKER BUILD ----------
+build_docker_image:
+  stage: docker_build
+  image: docker:24
+  services:
+    - docker:24-dind
+  script:
+    - docker build -t $DOCKER_IMAGE:$CI_COMMIT_SHORT_SHA -t $DOCKER_IMAGE:latest ./$APP_DIR
+    - docker save $DOCKER_IMAGE:latest -o image.tar
+  artifacts:
+    paths:
+      - image.tar
+    expire_in: 1 hour
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+
+# ---------- IMAGE SCAN ----------
+image_scan:
+  stage: image_scan
+  image: aquasec/trivy:latest
+  script:
+    - trivy image --input image.tar --severity HIGH,CRITICAL --exit-code 0
+  allow_failure: true
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+
+# ---------- CONTAINER TEST ----------
+container_test:
+  stage: container_test
+  image: docker:24
+  services:
+    - docker:24-dind
+  script:
+    - docker load -i image.tar
+    - docker run -d --name test-container -p 3000:3000 -e MONGO_URI=mongodb://fake:fake@fake:27017/test $DOCKER_IMAGE:latest
+    - sleep 5
+    - docker exec test-container wget -qO- http://localhost:3000/health/live || (docker logs test-container && exit 1)
+    - docker stop test-container
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+
+# ---------- REGISTRY (push) ----------
+push_image:
+  stage: registry
+  image: docker:24
+  services:
+    - docker:24-dind
+  script:
+    - docker load -i image.tar
+    - echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USER" --password-stdin
+    - docker push $DOCKER_IMAGE:$CI_COMMIT_SHORT_SHA
+    - docker push $DOCKER_IMAGE:latest
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'

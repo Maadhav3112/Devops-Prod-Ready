@@ -1,9 +1,8 @@
 version: "3.9"
-
 services:
   employee-app-thikse:
-    build: .
-    image: raiden004/employee-api:latest
+    build: ./application
+    image: raiden004/employee-api:v1.2
     container_name: employee-api
     ports:
       - "9500:3000"
@@ -13,10 +12,9 @@ services:
     depends_on:
       - mongo
     restart: unless-stopped
-
   mongo:
-    build: ./mongo-dockerfile
-    image: raiden004/employee-mongo:latest
+    build: ./mongo-Dockerfile
+    image: raiden004/employee-mongo:v1.2
     container_name: employee-mongo
     environment:
       - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USER}
@@ -26,6 +24,5 @@ services:
     volumes:
       - mongo-data:/data/db
     restart: unless-stopped
-
 volumes:
   mongo-data:
