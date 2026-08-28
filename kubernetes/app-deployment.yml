@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: employee-app
-          image: raiden004/employee-api:latest
+          image: raiden004/employee-api:v1.2
           ports:
             - containerPort: 3000
           env:
