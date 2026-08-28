@@ -27,7 +27,7 @@ spec:
             - name: MONGO_URI
               valueFrom:
                 secretKeyRef:
-                  name: employee-app-secret
+                  name: mployee-app-secret
                   key: MONGO_URI
           livenessProbe:
             httpGet:
