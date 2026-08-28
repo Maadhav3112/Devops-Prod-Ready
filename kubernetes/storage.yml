@@ -6,3 +6,16 @@ provisioner: ebs.csi.eks.amazonaws.com
 volumeBindingMode: WaitForFirstConsumer
 reclaimPolicy: Delete
 allowVolumeExpansion: true
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongo-pvc
+  namespace: employee-management-app
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: ebs-auto
+  resources:
+    requests:
+      storage: 5Gi
