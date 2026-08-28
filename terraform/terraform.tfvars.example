@@ -1,3 +1,0 @@
-mongo_root_user     = "admin"
-mongo_root_password = "changeme"
-environment         = "dev"

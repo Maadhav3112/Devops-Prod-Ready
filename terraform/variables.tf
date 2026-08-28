@@ -1,45 +1,28 @@
+variable "aws_region" {
+  description = "AWS region"
+  type        = string
+  default     = "ap-south-1"
+}
+
 variable "project_name" {
-  description = "Prefix used for naming all resources"
+  description = "Project name"
   type        = string
-  default     = "employee-app"
+  default     = "employee-api"
 }
 
-variable "environment" {
-  description = "Deployment environment (dev, staging, production concept)"
+variable "vpc_cidr" {
+  description = "CIDR block for the VPC"
   type        = string
-  default     = "dev"
+  default     = "10.0.0.0/16"
 }
 
-variable "app_image" {
-  description = "Docker image for the application"
-  type        = string
-  default     = "raiden004/employee-api:latest"
-}
+variable "public_subnet_cidrs" {
+  description = "CIDR blocks for the three public subnets"
+  type        = list(string)
 
-variable "mongo_image" {
-  description = "Docker image for MongoDB"
-  type        = string
-  default     = "raiden004/employee-mongo:latest"
-}
-
-variable "app_host_port" {
-  type    = number
-  default = 9500
-}
-
-variable "mongo_host_port" {
-  type    = number
-  default = 20000
-}
-
-variable "mongo_root_user" {
-  description = "MongoDB root username"
-  type        = string
-  sensitive   = true
-}
-
-variable "mongo_root_password" {
-  description = "MongoDB root password"
-  type        = string
-  sensitive   = true
+  default = [
+    "10.0.1.0/24",
+    "10.0.2.0/24",
+    "10.0.3.0/24"
+  ]
 }

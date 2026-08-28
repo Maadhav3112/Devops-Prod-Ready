@@ -1,79 +1,102 @@
 terraform {
+  required_version = ">= 1.5.0"
+
   required_providers {
-    docker = {
-      source  = "kreuzwerker/docker"
-      version = "~> 3.0"
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
     }
   }
 }
 
-provider "docker" {}
-
-# --- Network ---
-resource "docker_network" "app_network" {
-  name = "${var.project_name}-network"
+provider "aws" {
+  region = var.aws_region
 }
 
-# --- Mongo volume (persistent data) ---
-resource "docker_volume" "mongo_data" {
-  name = "${var.project_name}-mongo-data"
+# Get available Availability Zones
+data "aws_availability_zones" "available" {
+  state = "available"
 }
 
-# --- Mongo image + container ---
-resource "docker_image" "mongo" {
-  name = var.mongo_image
+# VPC
+resource "aws_vpc" "main" {
+  cidr_block           = var.vpc_cidr
+  enable_dns_support   = true
+  enable_dns_hostnames = true
+
+  tags = {
+    Name = "${var.project_name}-vpc"
+  }
 }
 
-resource "docker_container" "mongo" {
-  name  = "${var.project_name}-mongo"
-  image = docker_image.mongo.image_id
+# Internet Gateway
+resource "aws_internet_gateway" "main" {
+  vpc_id = aws_vpc.main.id
 
-  networks_advanced {
-    name = docker_network.app_network.name
+  tags = {
+    Name = "${var.project_name}-igw"
   }
-
-  env = [
-    "MONGO_INITDB_ROOT_USERNAME=${var.mongo_root_user}",
-    "MONGO_INITDB_ROOT_PASSWORD=${var.mongo_root_password}",
-  ]
-
-  ports {
-    internal = 27017
-    external = var.mongo_host_port
-  }
-
-  volumes {
-    volume_name    = docker_volume.mongo_data.name
-    container_path = "/data/db"
-  }
-
-  restart = "unless-stopped"
 }
 
-# --- App image + container ---
-resource "docker_image" "app" {
-  name = var.app_image
+# Three public subnets in three different AZs
+resource "aws_subnet" "public" {
+  count = 3
+
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = var.public_subnet_cidrs[count.index]
+  availability_zone       = data.aws_availability_zones.available.names[count.index]
+  map_public_ip_on_launch = true
+
+  tags = {
+    Name = "${var.project_name}-public-subnet-${count.index + 1}"
+  }
 }
 
-resource "docker_container" "app" {
-  name  = "${var.project_name}-app"
-  image = docker_image.app.image_id
+# Public Route Table
+resource "aws_route_table" "public" {
+  vpc_id = aws_vpc.main.id
 
-  networks_advanced {
-    name = docker_network.app_network.name
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.main.id
   }
 
-  env = [
-    "PORT=3000",
-    "MONGO_URI=mongodb://${var.mongo_root_user}:${var.mongo_root_password}@${docker_container.mongo.name}:27017/employeedb?authSource=admin",
-  ]
+  tags = {
+    Name = "${var.project_name}-public-route-table"
+  }
+}
 
-  ports {
-    internal = 3000
-    external = var.app_host_port
+# Associate the route table with all three public subnets
+resource "aws_route_table_association" "public" {
+  count = 3
+
+  subnet_id      = aws_subnet.public[count.index].id
+  route_table_id = aws_route_table.public.id
+}
+
+# Application Security Group
+resource "aws_security_group" "app" {
+  name        = "${var.project_name}-security-group"
+  description = "Security group for application"
+  vpc_id      = aws_vpc.main.id
+
+  ingress {
+    description = "HTTP"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
-  restart = "unless-stopped"
+  egress {
+    description = "Allow all outbound traffic"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 
-  depends_on = [docker_container.mongo]
+  tags = {
+    Name = "${var.project_name}-security-group"
+  }
 }
