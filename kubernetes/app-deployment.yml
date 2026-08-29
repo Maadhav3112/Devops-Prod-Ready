@@ -29,15 +29,22 @@ spec:
                 secretKeyRef:
                   name: employee-app-secret
                   key: MONGO_URI
+        # Checks whether Node.js/Express is alive
           livenessProbe:
             httpGet:
-              path: /health
+              path: /health/live
               port: 3000
             initialDelaySeconds: 10
             periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          # Checks whether the application can actually use MongoDB
           readinessProbe:
             httpGet:
-              path: /health
+              path: /health/ready
               port: 3000
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
