@@ -57,7 +57,9 @@ dependency_scan:
 
 secret_detection:
   stage: security_scan
-  image: zricethezav/gitleaks:latest
+  image:
+    name: zricethezav/gitleaks:latest
+    entrypoint: [""]
   script:
     - gitleaks detect --source . --verbose --no-git
   allow_failure: true
