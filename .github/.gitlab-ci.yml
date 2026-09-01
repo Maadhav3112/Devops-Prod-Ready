@@ -1,10 +1,6 @@
 # =========================================================
 # GitLab CI Pipeline
-# Stages match the Assignment Document:
-#   Section 6 -> Dependency Installation, Unit Tests, Build, Docker Build, Container Test
-#   Section 7 -> Test, Security Scan, Docker Build, Image Scan, Registry
-# Combined pipeline:
-#   install -> test -> security_scan -> build -> docker_build -> image_scan -> container_test -> registry
+# Stages: install -> test -> security_scan -> build -> docker_build -> image_scan -> container_test -> registry
 # =========================================================
 
 stages:
@@ -22,7 +18,6 @@ variables:
   IMAGE_TAG: v2.0
   APP_DIR: application
 
-# Reuse node_modules across jobs so we don't run "npm install" repeatedly
 cache:
   key: node-modules
   paths:
@@ -31,14 +26,14 @@ cache:
 default:
   image: node:20-alpine
 
-# ---------- 1. DEPENDENCY INSTALLATION (Doc Sec 6) ----------
+# ---------- 1. DEPENDENCY INSTALLATION ----------
 install_dependencies:
   stage: install
   script:
     - cd $APP_DIR
     - npm install
 
-# ---------- 2. UNIT TESTS (Doc Sec 6 & 7) ----------
+# ---------- 2. UNIT TESTS ----------
 run_tests:
   stage: test
   variables:
@@ -47,7 +42,7 @@ run_tests:
     - cd $APP_DIR
     - npm test
 
-# ---------- 3. SECURITY SCAN: dependency vulns + secret detection (Doc Sec 7) ----------
+# ---------- 3. SECURITY SCAN ----------
 dependency_scan:
   stage: security_scan
   script:
@@ -64,14 +59,14 @@ secret_detection:
     - gitleaks detect --source . --verbose --no-git
   allow_failure: true
 
-# ---------- 4. BUILD: application-level build/syntax check (Doc Sec 6) ----------
+# ---------- 4. BUILD ----------
 build_application:
   stage: build
   script:
     - cd $APP_DIR
     - node -c server.js
 
-# ---------- 5. DOCKER BUILD (Doc Sec 6 & 7) ----------
+# ---------- 5. DOCKER BUILD ----------
 build_docker_image:
   stage: docker_build
   image: docker:24
@@ -87,38 +82,37 @@ build_docker_image:
   rules:
     - if: '$CI_COMMIT_BRANCH == "master"'
 
-# ---------- 6. IMAGE SCAN: container vulnerability scan (Doc Sec 7) ----------
+# ---------- 6. IMAGE SCAN ----------
 image_scan:
   stage: image_scan
-  image: aquasec/trivy:latest
+  image:
+    name: aquasec/trivy:latest
+    entrypoint: [""]
   script:
     - trivy image --input image.tar --severity HIGH,CRITICAL --exit-code 0
   allow_failure: true
   rules:
     - if: '$CI_COMMIT_BRANCH == "master"'
 
-# ---------- 7. CONTAINER TEST (Doc Sec 6) ----------
-# App only opens port 3000 after it connects to Mongo, so we give it a real
-# Mongo container to talk to, then poll /health/ready until DB is connected.
+# ---------- 7. CONTAINER TEST ----------
 container_test:
   stage: container_test
   image: docker:24
   services:
     - docker:24-dind
-    - name: mongo:6
-      alias: test-mongo
   variables:
     MONGO_URI: "mongodb://test-mongo:27017/employeedb_citest"
   script:
     - docker load -i image.tar
-    - docker run -d --name test-container -p 3000:3000 -e MONGO_URI=$MONGO_URI -e PORT=3000 $DOCKER_IMAGE:$IMAGE_TAG
+    - docker network create citest-net
+    - docker run -d --name test-mongo --network citest-net mongo:6
+    - docker run -d --name test-container --network citest-net -e MONGO_URI=$MONGO_URI -e PORT=3000 $DOCKER_IMAGE:$IMAGE_TAG
     - sleep 10
     - docker exec test-container wget -qO- http://localhost:3000/health/ready || (docker logs test-container && exit 1)
-    - docker stop test-container
   rules:
     - if: '$CI_COMMIT_BRANCH == "master"'
 
-# ---------- 8. REGISTRY: push image (Doc Sec 5 & 7) ----------
+# ---------- 8. REGISTRY ----------
 push_image:
   stage: registry
   image: docker:24
