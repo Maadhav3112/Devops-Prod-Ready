@@ -5,6 +5,8 @@ const path = require('path');
 const connectDB = require('./config/db');
 const logger = require('./config/logger');
 const employeeRoutes = require('./routes/employees');
+const departmentRoutes = require('./routes/departments');
+const roleRoutes = require('./routes/roles');
 const { errorHandler } = require('./middleware/errorHandler');
 
 // Fail fast if required env vars are missing — better to crash at startup
@@ -32,12 +34,18 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.get('/api', (req, res) => {
   res.status(200).json({
     message: 'Employee Management API is running',
+    version: process.env.APP_VERSION || 'v2',
     endpoints: {
       health: 'GET /health',
       liveness: 'GET /health/live',
       readiness: 'GET /health/ready',
-      employees: 'GET|POST /api/employees',
+      employees: 'GET|POST /api/employees (supports ?search=&department=&role=&status=)',
       employeeById: 'GET|PUT|DELETE /api/employees/:id',
+      employeeStats: 'GET /api/employees/stats',
+      employeeExport: 'GET /api/employees/export',
+      employeeResetDemo: 'DELETE /api/employees/reset-demo',
+      departments: 'GET|POST /api/departments, DELETE /api/departments/:id, POST /api/departments/sync',
+      roles: 'GET|POST /api/roles, DELETE /api/roles/:id, POST /api/roles/sync',
     },
   });
 });
@@ -63,10 +71,12 @@ app.get('/health/ready', (req, res) => {
 
 // Kept for backward compatibility with Day 1/2 setup (Docker HEALTHCHECK, etc.)
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok' });
+  res.status(200).json({ status: 'ok', version: process.env.APP_VERSION || 'v2' });
 });
 
 app.use('/api/employees', employeeRoutes);
+app.use('/api/departments', departmentRoutes);
+app.use('/api/roles', roleRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ success: false, error: 'Route not found' });

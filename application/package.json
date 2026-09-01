@@ -1,6 +1,6 @@
 {
   "name": "employee-management-api",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Simple Employee Management REST API built for DevOps assignment",
   "main": "server.js",
   "scripts": {

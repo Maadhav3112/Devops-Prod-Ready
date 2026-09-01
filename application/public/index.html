@@ -6,67 +6,321 @@
   <title>Thikse — Employee Management</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.44.0/iconfont/tabler-icons.min.css" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-  <header class="topbar">
-    <div class="brand">
-      <span class="brand-mark">TK</span>
-      <div class="brand-text">
-        <h1>Thikse</h1>
-        <p>Employee Management</p>
-      </div>
-    </div>
+  <!-- Theme is resolved before paint via an inline script at the end of <head>-equivalent position (top of body) to avoid a flash of the wrong theme. -->
+  <script>
+    (function () {
+      var stored = localStorage.getItem('thikse-theme') || 'system';
+      var resolved = stored === 'system'
+        ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+        : stored;
+      document.documentElement.setAttribute('data-theme', resolved);
+    })();
+  </script>
 
-    <div class="stamp" id="stamp" aria-hidden="true">
-      <span id="stampCount">0</span>
-      <small>on record</small>
-    </div>
+  <div class="app-shell">
 
-    <button class="btn btn-primary" id="openAddBtn">Add employee</button>
-  </header>
-
-  <main class="page">
-
-    <div class="toolbar">
-      <input
-        type="search"
-        id="searchInput"
-        class="search"
-        placeholder="Search by name, department, or role…"
-        autocomplete="off"
-      />
-      <div class="status" id="statusLine"></div>
-    </div>
-
-    <section class="ledger-wrap">
-      <table class="ledger">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Department</th>
-            <th>Role</th>
-            <th class="num">Salary</th>
-            <th class="col-actions"></th>
-          </tr>
-        </thead>
-        <tbody id="employeeRows">
-          <!-- rows injected by script.js -->
-        </tbody>
-      </table>
-
-      <div class="empty-state" id="emptyState" hidden>
-        <p class="empty-title">No records yet</p>
-        <p class="empty-sub">Add your first employee to start the roster.</p>
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <span class="brand-mark">TK</span>
+        <div class="brand-text">
+          <h1>Thikse <span class="version-badge"></span></h1>
+          <p>Employee Management</p>
+        </div>
       </div>
 
-      <div class="loading-state" id="loadingState">
-        <p>Loading roster…</p>
-      </div>
-    </section>
+      <nav class="sidebar-nav">
+        <button type="button" class="nav-item" data-route="dashboard">
+          <i class="ti ti-layout-dashboard"></i> Dashboard
+        </button>
+        <button type="button" class="nav-item" data-route="employees">
+          <i class="ti ti-users"></i> Employees
+        </button>
+        <button type="button" class="nav-item" data-route="analytics">
+          <i class="ti ti-chart-bar"></i> Analytics
+        </button>
+        <button type="button" class="nav-item" data-route="settings">
+          <i class="ti ti-settings"></i> Settings
+        </button>
+      </nav>
+    </aside>
 
-  </main>
+    <div class="main">
+
+      <!-- ================= DASHBOARD PAGE ================= -->
+      <section class="page" id="page-dashboard" data-page="dashboard">
+        <div class="page-head">
+          <div>
+            <h2>Dashboard</h2>
+            <p class="page-sub">Live numbers from your employee roster</p>
+          </div>
+          <div class="stamp" aria-hidden="true">
+            <span id="stampCount">0</span>
+            <small>on record</small>
+          </div>
+        </div>
+
+        <div class="dashboard-grid" id="dashboardStats">
+          <div class="stat-card">
+            <span class="stat-label">Total employees</span>
+            <span class="stat-value" id="statTotalEmployees">—</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Total departments</span>
+            <span class="stat-value" id="statTotalDepartments">—</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Average salary</span>
+            <span class="stat-value" id="statAverageSalary">—</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Highest salary</span>
+            <span class="stat-value" id="statHighestSalary">—</span>
+          </div>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-card-head">
+            <h3>Salary by department</h3>
+          </div>
+          <div class="dept-breakdown" id="dashboardDeptBreakdown"></div>
+        </div>
+      </section>
+
+      <!-- ================= EMPLOYEES PAGE ================= -->
+      <section class="page" id="page-employees" data-page="employees" hidden>
+        <div class="page-head">
+          <div>
+            <h2>Employees</h2>
+            <p class="page-sub">Search, filter, and manage the roster</p>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-ghost" id="exportBtn"><i class="ti ti-download"></i> Export CSV</button>
+            <button class="btn btn-primary" id="openAddBtn"><i class="ti ti-plus"></i> Add employee</button>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <input
+            type="search"
+            id="searchInput"
+            class="search"
+            placeholder="Search by name, department, or role…"
+            autocomplete="off"
+          />
+
+          <select id="filterDepartment" class="filter-select" aria-label="Filter by department">
+            <option value="">All departments</option>
+          </select>
+
+          <select id="filterRole" class="filter-select" aria-label="Filter by role">
+            <option value="">All roles</option>
+          </select>
+
+          <select id="filterStatus" class="filter-select" aria-label="Filter by status">
+            <option value="">All statuses</option>
+            <option value="Active">Active</option>
+            <option value="On Leave">On Leave</option>
+            <option value="Inactive">Inactive</option>
+          </select>
+
+          <button class="btn btn-ghost btn-small" id="clearFiltersBtn" type="button">Clear</button>
+
+          <div class="status" id="statusLine"></div>
+        </div>
+
+        <section class="ledger-wrap">
+          <table class="ledger" id="ledgerTable">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Department</th>
+                <th>Role</th>
+                <th class="num">Salary</th>
+                <th>Status</th>
+                <th class="col-actions"></th>
+              </tr>
+            </thead>
+            <tbody id="employeeRows"></tbody>
+          </table>
+
+          <div class="empty-state" id="emptyState" hidden>
+            <p class="empty-title">No records yet</p>
+            <p class="empty-sub">Add your first employee to start the roster.</p>
+          </div>
+
+          <div class="loading-state" id="loadingState">
+            <p>Loading roster…</p>
+          </div>
+        </section>
+      </section>
+
+      <!-- ================= ANALYTICS PAGE ================= -->
+      <section class="page" id="page-analytics" data-page="analytics" hidden>
+        <div class="page-head">
+          <div>
+            <h2>Analytics</h2>
+            <p class="page-sub">Salary and headcount breakdown, live from your data</p>
+          </div>
+        </div>
+
+        <div class="dashboard-grid four" id="analyticsStats">
+          <div class="stat-card">
+            <span class="stat-label">Average salary</span>
+            <span class="stat-value" id="analyticsAvg">—</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Highest salary</span>
+            <span class="stat-value" id="analyticsHigh">—</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Lowest salary</span>
+            <span class="stat-value" id="analyticsLow">—</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Total departments</span>
+            <span class="stat-value" id="analyticsDeptCount">—</span>
+          </div>
+        </div>
+
+        <div class="analytics-columns">
+          <div class="panel-card">
+            <div class="panel-card-head"><h3>Average salary by department</h3></div>
+            <div class="dept-breakdown" id="analyticsDeptBreakdown"></div>
+          </div>
+          <div class="panel-card">
+            <div class="panel-card-head"><h3>Status breakdown</h3></div>
+            <div class="status-breakdown" id="statusBreakdown"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= SETTINGS PAGE ================= -->
+      <section class="page" id="page-settings" data-page="settings" hidden>
+        <div class="page-head">
+          <div>
+            <h2>Settings</h2>
+            <p class="page-sub">App preferences and roster configuration</p>
+          </div>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-card-head">
+            <h3>General</h3>
+            <p class="panel-card-sub">Display currency and app info</p>
+          </div>
+          <div class="settings-row">
+            <span>Currency</span>
+            <span class="pill">INR (₹)</span>
+          </div>
+          <div class="settings-row">
+            <span>App version</span>
+            <span class="mono">V2.0</span>
+          </div>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-card-head">
+            <h3>Appearance</h3>
+            <p class="panel-card-sub">Choose how Thikse looks on this device</p>
+          </div>
+          <div class="theme-picker" id="themePicker">
+            <button type="button" class="theme-option" data-theme-choice="light">
+              <i class="ti ti-sun"></i>
+              <span>Light</span>
+            </button>
+            <button type="button" class="theme-option" data-theme-choice="dark">
+              <i class="ti ti-moon"></i>
+              <span>Dark</span>
+            </button>
+            <button type="button" class="theme-option" data-theme-choice="system">
+              <i class="ti ti-device-desktop"></i>
+              <span>System</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-card-head">
+            <h3>Departments and roles</h3>
+            <p class="panel-card-sub">Manage the suggestions shown in the employee form. Removing one here does not change any existing employee record.</p>
+          </div>
+
+          <div class="manage-group">
+            <div class="manage-group-head">
+              <span>Departments</span>
+              <button type="button" class="btn btn-ghost btn-small" id="syncDepartmentsBtn">
+                <i class="ti ti-refresh"></i> Sync from roster
+              </button>
+            </div>
+            <div class="chip-list" id="departmentChips"></div>
+            <form class="chip-add-form" id="addDepartmentForm">
+              <input type="text" id="newDepartmentName" placeholder="New department name" />
+              <button type="submit" class="btn btn-ghost btn-small"><i class="ti ti-plus"></i> Add</button>
+            </form>
+          </div>
+
+          <div class="manage-group">
+            <div class="manage-group-head">
+              <span>Roles</span>
+              <button type="button" class="btn btn-ghost btn-small" id="syncRolesBtn">
+                <i class="ti ti-refresh"></i> Sync from roster
+              </button>
+            </div>
+            <div class="chip-list" id="roleChips"></div>
+            <form class="chip-add-form" id="addRoleForm">
+              <input type="text" id="newRoleName" placeholder="New role name" />
+              <button type="submit" class="btn btn-ghost btn-small"><i class="ti ti-plus"></i> Add</button>
+            </form>
+          </div>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-card-head">
+            <h3>Special features</h3>
+            <p class="panel-card-sub">Optional behavior for the employee roster, saved on this device</p>
+          </div>
+          <label class="settings-row toggle-row">
+            <div>
+              <div class="toggle-title">Compact table view</div>
+              <div class="toggle-sub">Tighter row spacing, more rows per screen</div>
+            </div>
+            <input type="checkbox" class="switch" id="toggleCompact" />
+          </label>
+          <label class="settings-row toggle-row">
+            <div>
+              <div class="toggle-title">Auto-refresh dashboard</div>
+              <div class="toggle-sub">Refresh stats every 30 seconds while viewing Dashboard or Analytics</div>
+            </div>
+            <input type="checkbox" class="switch" id="toggleAutoRefresh" />
+          </label>
+          <label class="settings-row toggle-row">
+            <div>
+              <div class="toggle-title">Keyboard shortcuts</div>
+              <div class="toggle-sub">N to add an employee, / to search, Esc to close panels</div>
+            </div>
+            <input type="checkbox" class="switch" id="toggleShortcuts" />
+          </label>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-card-head">
+            <h3>Data and export</h3>
+            <p class="panel-card-sub">Export or reset the employee roster</p>
+          </div>
+          <div class="settings-actions">
+            <button class="btn btn-primary" id="settingsExportBtn"><i class="ti ti-download"></i> Export CSV</button>
+            <button class="btn btn-danger-outline" id="resetDemoBtn"><i class="ti ti-trash"></i> Reset demo data</button>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
 
   <!-- Slide-over panel: add / edit -->
   <div class="overlay" id="overlay"></div>
@@ -91,17 +345,28 @@
 
       <label class="field">
         <span>Department</span>
-        <input type="text" id="fieldDepartment" required placeholder="Engineering" />
+        <input type="text" id="fieldDepartment" required placeholder="Engineering" list="departmentOptions" />
+        <datalist id="departmentOptions"></datalist>
       </label>
 
       <label class="field">
         <span>Role</span>
-        <input type="text" id="fieldRole" placeholder="Backend Developer" />
+        <input type="text" id="fieldRole" placeholder="Backend Developer" list="roleOptions" />
+        <datalist id="roleOptions"></datalist>
       </label>
 
       <label class="field">
         <span>Salary</span>
         <input type="number" id="fieldSalary" min="0" step="1000" placeholder="75000" />
+      </label>
+
+      <label class="field">
+        <span>Status</span>
+        <select id="fieldStatus">
+          <option value="Active">Active</option>
+          <option value="On Leave">On Leave</option>
+          <option value="Inactive">Inactive</option>
+        </select>
       </label>
 
       <div class="form-error" id="formError" hidden></div>
@@ -113,10 +378,10 @@
     </form>
   </aside>
 
-  <!-- Confirm delete -->
+  <!-- Confirm dialog (delete employee / delete dept-role / reset demo) -->
   <div class="overlay" id="confirmOverlay"></div>
   <div class="confirm-box" id="confirmBox" aria-hidden="true">
-    <p class="confirm-title">Remove this employee?</p>
+    <p class="confirm-title" id="confirmTitle">Remove this employee?</p>
     <p class="confirm-sub" id="confirmName"></p>
     <div class="confirm-actions">
       <button class="btn btn-ghost" id="cancelDeleteBtn">Cancel</button>

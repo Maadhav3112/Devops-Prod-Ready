@@ -29,6 +29,19 @@ const employeeSchema = new mongoose.Schema(
       min: 0,
       default: 0,
     },
+    // --- V2 addition ---
+    // New, additive field. Existing V1 documents simply won't have this
+    // field set in the database; we default it to 'Active' both here
+    // (for new/updated docs) and defensively wherever V2 reads employees,
+    // so V1 documents display sensibly without a migration being required.
+    // V1's schema doesn't know about this field and will continue to
+    // read/write documents fine — Mongoose (and MongoDB) ignore fields
+    // that aren't declared in a schema, so nothing breaks on rollback.
+    status: {
+      type: String,
+      enum: ['Active', 'On Leave', 'Inactive'],
+      default: 'Active',
+    },
   },
   {
     timestamps: true, // adds createdAt / updatedAt automatically
