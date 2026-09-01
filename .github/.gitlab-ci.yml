@@ -10,7 +10,7 @@ stages:
   - registry
 
 variables:
-  DOCKER_IMAGE: raiden004/employee-api
+  DOCKER_IMAGE: raiden004/employee-app:v2.0
   APP_DIR: application
 
 # ---------- DEPENDENCY INSTALLATION ----------
