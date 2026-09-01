@@ -14,7 +14,7 @@ stages:
   - registry
 
 variables:
-  DOCKER_IMAGE: employee-app
+  DOCKER_IMAGE: $DOCKERHUB_USER/employee-app
   IMAGE_TAG: v2.0
   APP_DIR: application
 
