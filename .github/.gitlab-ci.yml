@@ -1,3 +1,12 @@
+# =========================================================
+# GitLab CI Pipeline
+# Stages match the Assignment Document:
+#   Section 6 -> Dependency Installation, Unit Tests, Build, Docker Build, Container Test
+#   Section 7 -> Test, Security Scan, Docker Build, Image Scan, Registry
+# Combined pipeline:
+#   install -> test -> security_scan -> build -> docker_build -> image_scan -> container_test -> registry
+# =========================================================
+
 stages:
   - install
   - test
@@ -9,35 +18,38 @@ stages:
   - registry
 
 variables:
-  DOCKER_IMAGE: raiden004/employee-app
+  DOCKER_IMAGE: employee-app
+  IMAGE_TAG: v2.0
   APP_DIR: application
 
-# ---------- DEPENDENCY INSTALLATION ----------
+# Reuse node_modules across jobs so we don't run "npm install" repeatedly
+cache:
+  key: node-modules
+  paths:
+    - $APP_DIR/node_modules/
+
+default:
+  image: node:20-alpine
+
+# ---------- 1. DEPENDENCY INSTALLATION (Doc Sec 6) ----------
 install_dependencies:
   stage: install
-  image: node:20-alpine
   script:
     - cd $APP_DIR
     - npm install
-  cache:
-    paths:
-      - $APP_DIR/node_modules/
 
-# ---------- UNIT TESTS ----------
+# ---------- 2. UNIT TESTS (Doc Sec 6 & 7) ----------
 run_tests:
   stage: test
-  image: node:20-alpine
   variables:
     MONGO_URI: "mongodb://fake:fake@fake:27017/test"
   script:
     - cd $APP_DIR
-    - npm install
     - npm test
 
-# ---------- SECURITY SCAN (dependencies + secrets) ----------
+# ---------- 3. SECURITY SCAN: dependency vulns + secret detection (Doc Sec 7) ----------
 dependency_scan:
   stage: security_scan
-  image: node:20-alpine
   script:
     - cd $APP_DIR
     - npm audit --audit-level=high
@@ -50,24 +62,22 @@ secret_detection:
     - gitleaks detect --source . --verbose --no-git
   allow_failure: true
 
-# ---------- BUILD (application-level syntax/build check) ----------
+# ---------- 4. BUILD: application-level build/syntax check (Doc Sec 6) ----------
 build_application:
   stage: build
-  image: node:20-alpine
   script:
     - cd $APP_DIR
-    - npm install
     - node -c server.js
 
-# ---------- DOCKER BUILD ----------
+# ---------- 5. DOCKER BUILD (Doc Sec 6 & 7) ----------
 build_docker_image:
   stage: docker_build
   image: docker:24
   services:
     - docker:24-dind
   script:
-    - docker build -t $DOCKER_IMAGE:$CI_COMMIT_SHORT_SHA -t $DOCKER_IMAGE:latest ./$APP_DIR
-    - docker save $DOCKER_IMAGE:latest -o image.tar
+    - docker build -t $DOCKER_IMAGE:$IMAGE_TAG -t $DOCKER_IMAGE:latest ./$APP_DIR
+    - docker save $DOCKER_IMAGE:$IMAGE_TAG $DOCKER_IMAGE:latest -o image.tar
   artifacts:
     paths:
       - image.tar
@@ -75,7 +85,7 @@ build_docker_image:
   rules:
     - if: '$CI_COMMIT_BRANCH == "master"'
 
-# ---------- IMAGE SCAN ----------
+# ---------- 6. IMAGE SCAN: container vulnerability scan (Doc Sec 7) ----------
 image_scan:
   stage: image_scan
   image: aquasec/trivy:latest
@@ -85,22 +95,28 @@ image_scan:
   rules:
     - if: '$CI_COMMIT_BRANCH == "master"'
 
-# ---------- CONTAINER TEST ----------
+# ---------- 7. CONTAINER TEST (Doc Sec 6) ----------
+# App only opens port 3000 after it connects to Mongo, so we give it a real
+# Mongo container to talk to, then poll /health/ready until DB is connected.
 container_test:
   stage: container_test
   image: docker:24
   services:
     - docker:24-dind
+    - name: mongo:6
+      alias: test-mongo
+  variables:
+    MONGO_URI: "mongodb://test-mongo:27017/employeedb_citest"
   script:
     - docker load -i image.tar
-    - docker run -d --name test-container -p 3000:3000 -e MONGO_URI=mongodb://fake:fake@fake:27017/test $DOCKER_IMAGE:latest
-    - sleep 5
-    - docker exec test-container wget -qO- http://localhost:3000/health/live || (docker logs test-container && exit 1)
+    - docker run -d --name test-container -p 3000:3000 -e MONGO_URI=$MONGO_URI -e PORT=3000 $DOCKER_IMAGE:$IMAGE_TAG
+    - sleep 10
+    - docker exec test-container wget -qO- http://localhost:3000/health/ready || (docker logs test-container && exit 1)
     - docker stop test-container
   rules:
     - if: '$CI_COMMIT_BRANCH == "master"'
 
-# ---------- REGISTRY (push) ----------
+# ---------- 8. REGISTRY: push image (Doc Sec 5 & 7) ----------
 push_image:
   stage: registry
   image: docker:24
@@ -109,7 +125,7 @@ push_image:
   script:
     - docker load -i image.tar
     - echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USER" --password-stdin
-    - docker push $DOCKER_IMAGE:$CI_COMMIT_SHORT_SHA
+    - docker push $DOCKER_IMAGE:$IMAGE_TAG
     - docker push $DOCKER_IMAGE:latest
   rules:
     - if: '$CI_COMMIT_BRANCH == "master"'
