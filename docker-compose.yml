@@ -2,7 +2,7 @@ version: "3.9"
 services:
   employee-app-thikse:
     build: ./employee-app-v2
-    image: raiden004/employee-api:v1.2
+    image: raiden004/employee-app:v2.0
     container_name: employee-api
     ports:
       - "9500:3000"
