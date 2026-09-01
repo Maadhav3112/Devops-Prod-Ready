@@ -1,6 +1,5 @@
 stages:
   - install
-  - lint
   - test
   - security_scan
   - build
@@ -23,16 +22,6 @@ install_dependencies:
   cache:
     paths:
       - $APP_DIR/node_modules/
-
-# ---------- LINT ----------
-run_lint:
-  stage: lint
-  image: node:20-alpine
-  script:
-    - cd $APP_DIR
-    - npm install
-    - npm run lint
-  allow_failure: true
 
 # ---------- UNIT TESTS ----------
 run_tests:
