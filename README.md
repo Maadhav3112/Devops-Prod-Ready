@@ -127,7 +127,7 @@ Employee-Devops-Thikse/
 
 ---
 
-## Application
+## Application Version - 1.0.0
 
 Employee Management REST API with a lightweight web UI.
 
