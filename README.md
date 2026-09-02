@@ -133,7 +133,7 @@ Employee Management REST API with a lightweight web UI.
 
 **Features:** CRUD for employees (name, email, department, role, salary), health endpoint, MongoDB persistence, environment-based configuration.
 
-![Application UI](https://raw.githubusercontent.com/Maadhav3112/Employee-Devops-Thikse/master/docs/images/app_v1_ui.png)
+![Application UI](images/app_v1_ui.png)
 
 *Employee roster UI — list, search, edit, remove*
 
