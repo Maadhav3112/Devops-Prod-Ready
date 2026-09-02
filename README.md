@@ -10,7 +10,7 @@
 
 A complete production-oriented DevOps platform built around an **Employee Management** REST API (Node.js + Express + MongoDB), demonstrating a full lifecycle on controlled personal/internship resources.
 
-**Repository:** [Maadhav3112/Employee-Devops-Thikse](https://github.com/Maadhav3112/Devops-Prod-Ready)
+**Repository:** [Maadhav3112/Devops-prod-ready](https://github.com/Maadhav3112/Devops-Prod-Ready)
 
 ---
 
