@@ -169,11 +169,11 @@ Pipeline stages:
 
 **Checkout → Dependencies → Lint → Unit Tests → Build → Docker Build → Container Test → Security Scan → Push**
 
-![GitLab CI project](https://raw.githubusercontent.com/Maadhav3112/Employee-Devops-Thikse/master/docs/images/cicd1.png)
+![GitLab CI project](images/cicd1.png)
 
 *GitLab project — Pipelines, Jobs, Deploy*
 
-![CI pipeline jobs](https://raw.githubusercontent.com/Maadhav3112/Employee-Devops-Thikse/master/docs/images/cicd2.png)
+![CI pipeline jobs](images/cicd2.png)
 
 *Pipeline / jobs view*
 
@@ -190,35 +190,35 @@ Config: `.gitlab-ci.yml` and/or `.github/workflows/ci.yml`
 
 Desired state is in Git; Argo CD reconciles the cluster continuously.
 
-![Argo CD Applications](https://raw.githubusercontent.com/Maadhav3112/Employee-Devops-Thikse/master/docs/images/argo_apps.png)
+![Argo CD Applications](images/argo_apps.png)
 
 *Argo CD — sync status and health*
 
-![Argo CD v2 sync](https://raw.githubusercontent.com/Maadhav3112/Employee-Devops-Thikse/master/docs/images/argo_v2_sync.png)
+![Argo CD v2 sync](images/argo_v2_sync.png)
 
 *Upgrade to v2.0 detected and synced*
 
-![Git commit – upgrade to v2.0](https://raw.githubusercontent.com/Maadhav3112/Employee-Devops-Thikse/master/docs/images/app_v2_commit.png)
+![Git commit – upgrade to v2.0](images/app_v2_commit.png)
 
 *Git history showing the v2.0 upgrade commit*
 
-![Argo CD v2 – application detail](https://raw.githubusercontent.com/Maadhav3112/Employee-Devops-Thikse/master/docs/images/argo_v2_detail1.png)
+![Argo CD v2 – application detail](images/argo_v2_detail1.png)
 
 *Argo CD application detail after v2.0 deployment*
 
-![Argo CD v2 – resource health](https://raw.githubusercontent.com/Maadhav3112/Employee-Devops-Thikse/master/docs/images/argo_v2_detail2.png)
+![Argo CD v2 – resource health](images/argo_v2_detail2.png)
 
 *Resource health and sync status for v2.0*
 
-![Argo CD v2 – pods/containers](https://raw.githubusercontent.com/Maadhav3112/Employee-Devops-Thikse/master/docs/images/argo_v2_detail3.png)
+![Argo CD v2 – pods/containers](images/argo_v2_detail3.png)
 
 *Pod and container status under the v2.0 revision*
 
-![Argo CD v2 – healthy confirmation](https://raw.githubusercontent.com/Maadhav3112/Employee-Devops-Thikse/master/docs/images/argo_v2_detail4.png)
+![Argo CD v2 – healthy confirmation](images/argo_v2_detail4.png)
 
 *Final confirmation of healthy v2.0 deployment*
 
-![Application logs via Argo CD](https://raw.githubusercontent.com/Maadhav3112/Employee-Devops-Thikse/master/docs/images/argo_logs.png)
+![Application logs via Argo CD](images/argo_logs.png)
 
 *Structured health-check logs (`GET /health`)*
 
@@ -235,11 +235,11 @@ Desired state is in Git; Argo CD reconciles the cluster continuously.
 - Resource requests/limits  
 - Persistent storage for MongoDB where required  
 
-![EKS nodes Ready](https://raw.githubusercontent.com/Maadhav3112/Employee-Devops-Thikse/master/docs/images/eks_nodes2.png)
+![EKS nodes Ready](images/eks_nodes2.png)
 
 *EKS nodes registered and Ready*
 
-![EKS pods](https://raw.githubusercontent.com/Maadhav3112/Employee-Devops-Thikse/master/docs/images/eks_pods.png)
+![EKS pods](images/eks_pods.png)
 
 *Multiple application replicas healthy*
 
@@ -255,11 +255,11 @@ Desired state is in Git; Argo CD reconciles the cluster continuously.
 
 Version-controlled, repeatable infrastructure (IAM roles/users, EKS-related resources, environment separation concepts).
 
-![Terraform plan](https://raw.githubusercontent.com/Maadhav3112/Employee-Devops-Thikse/master/docs/images/tf_plan.png)
+![Terraform plan](images/tf_plan.png)
 
 *terraform plan — preview of changes*
 
-![Terraform apply](https://raw.githubusercontent.com/Maadhav3112/Employee-Devops-Thikse/master/docs/images/tf_apply6.png)
+![Terraform apply](images/tf_apply6.png)
 
 *terraform apply completed*
 
@@ -279,15 +279,15 @@ Setup summary:
 4. Verify pods / DaemonSet
 5. Confirm metrics & logs in Datadog UI
 
-![Datadog pods view](https://raw.githubusercontent.com/Maadhav3112/Employee-Devops-Thikse/master/docs/images/dd_pods.png)
+![Datadog pods view](images/dd_pods.png)
 
 *Infrastructure — pods, status, CPU/memory*
 
-![Datadog dashboard](https://raw.githubusercontent.com/Maadhav3112/Employee-Devops-Thikse/master/docs/images/dd_dashboard.png)
+![Datadog dashboard](images/dd_dashboard.png)
 
 *Resource utilization dashboard*
 
-![CPU metrics](https://raw.githubusercontent.com/Maadhav3112/Employee-Devops-Thikse/master/docs/images/dd_cpu.png)
+![CPU metrics](images/dd_cpu.png)
 
 *CPU usage panels*
 
