@@ -1,182 +1,389 @@
-# Employee Management API
+# Employee Management Platform — Production-Ready DevOps
 
-A small REST API — with a lightweight web UI on top — for managing employee
-records. Built as the base application for a DevOps assignment
-(containerization, Kubernetes deployment, CI/CD).
+[![DevOps](https://img.shields.io/badge/DevOps-Lifecycle-blue)](https://github.com/Maadhav3112/Employee-Devops-Thikse)
+[![Kubernetes](https://img.shields.io/badge/Kubernetes-EKS-326CE5?logo=kubernetes&logoColor=white)](https://aws.amazon.com/eks/)
+[![Argo CD](https://img.shields.io/badge/GitOps-Argo%20CD-EF7B4D?logo=argo&logoColor=white)](https://argo-cd.readthedocs.io/)
+[![Terraform](https://img.shields.io/badge/IaC-Terraform-7B42BC?logo=terraform&logoColor=white)](https://www.terraform.io/)
+[![Datadog](https://img.shields.io/badge/Observability-Datadog-632CA6?logo=datadog&logoColor=white)](https://www.datadoghq.com/)
 
-## What it does
+> **Build → Containerize → Compose → Secure → Deploy → Automate → Monitor → Troubleshoot → Document**
 
-Basic CRUD for employee records: create, list, view, update, and delete
-employees, backed by MongoDB. A static frontend (`/public`) is served
-directly from the same Express app, so there's nothing extra to deploy or
-run separately.
+A complete production-oriented DevOps platform built around an **Employee Management** REST API (Node.js + Express + MongoDB), demonstrating a full lifecycle on controlled personal/internship resources.
 
-## Technology used
+**Repository:** [Maadhav3112/Employee-Devops-Thikse](https://github.com/Maadhav3112/Employee-Devops-Thikse)
 
-- **Node.js + Express** — HTTP server / routing, and static file serving
-- **MongoDB + Mongoose** — data storage and schema validation
-- **dotenv** — environment variable loading
-- **HTML / CSS / vanilla JS** — the frontend (`/public`), no build step required
-- **Docker + Docker Compose** — containerized app and database
+---
 
-## Running locally
+## Table of Contents
 
-### Option 1: Docker Compose (recommended)
+- [Overview](#overview)
+- [Architecture](#architecture)
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
+- [Application](#application)
+- [Local Development (Docker Compose)](#local-development-docker-compose)
+- [CI/CD Pipeline](#cicd-pipeline)
+- [GitOps with Argo CD](#gitops-with-argo-cd)
+- [Kubernetes (EKS)](#kubernetes-eks)
+- [Infrastructure as Code (Terraform)](#infrastructure-as-code-terraform)
+- [Monitoring (Datadog)](#monitoring-datadog)
+- [Security](#security)
+- [Rollback](#rollback)
+- [Challenges & Solutions](#challenges--solutions)
+- [Documentation](#documentation)
+- [Getting Started](#getting-started)
 
-Spins up the app and a MongoDB container together.
+---
 
-```bash
-cp .env.example .env   # set MONGO_ROOT_USER / MONGO_ROOT_PASSWORD
-docker compose -f Docker-compose.yml up --build
+## Overview
+
+This project evolves a small Employee Management service into a **production-ready platform** covering:
+
+| Area | What was implemented |
+|------|----------------------|
+| Application | Backend API, MongoDB, health/readiness/liveness, logging, env-based config |
+| Containers | Multi-stage Dockerfile, non-root, Compose with persistent volumes |
+| CI | Lint → Unit tests → Build → Docker build → Container test → Security scans |
+| CD / GitOps | Argo CD continuous sync, version upgrades (v1 → v2), rollback |
+| Kubernetes | EKS, Namespace, Deployment (≥2 replicas), Service, ConfigMap, Secret, probes |
+| IaC | Terraform for IAM, EKS-related resources, repeatable infrastructure |
+| Observability | Datadog metrics, logs, APM; Kubernetes probes; structured JSON logs |
+
+No THIKSE production credentials or internal source were used.
+
+---
+
+## Architecture
+
+```text
+Developer
+    ↓
+Git Repository
+    ↓
+CI Pipeline (GitLab / GitHub Actions)
+    ├── Lint / Unit Tests
+    ├── Security Scan
+    ├── Docker Build + Image Scan
+    └── Push to Registry
+          ↓
+Argo CD (GitOps)
+          ↓
+Amazon EKS
+    ├── Pod 1 (replica)
+    └── Pod 2 (replica)
+          ↓
+Application + MongoDB
+          ↓
+Datadog (metrics, logs, APM)
 ```
 
-- Frontend: `http://localhost:9500`
-- API: `http://localhost:9500/api/employees`
-- MongoDB (if you need direct access): `localhost:20000`
+---
 
-Stop everything with:
+## Tech Stack
 
-```bash
-docker compose -f Docker-compose.yml down
+| Layer | Technology |
+|-------|------------|
+| Application | Node.js, Express, MongoDB, Mongoose |
+| Frontend | Static HTML/CSS/JS served by Express |
+| Containers | Docker, Docker Compose |
+| Orchestration | Amazon EKS |
+| GitOps | Argo CD |
+| CI | GitLab CI / GitHub Actions |
+| IaC | Terraform |
+| Monitoring | Datadog (Agent + Operator), K8s probes |
+| Security | Non-root images, Secrets, image/dependency scans |
+
+---
+
+## Project Structure
+
+```text
+Employee-Devops-Thikse/
+├── application/              # Source (Express API + public UI)
+├── tests/
+│   ├── unit/
+│   ├── integration/
+│   └── container/smoke_test.sh
+├── kubernetes/              # Manifests (namespace, deployment, service, ...)
+├── terraform/                # IaC
+├── scripts/                  # build, test, deploy, rollback helpers
+├── monitoring/               # Datadog setup, probes, alerts
+│   └── datadog/
+│       ├── setup.md
+│       └── datadog-agent.yaml
+├── docs/
+│   ├── architecture/
+│   ├── security/
+│   ├── troubleshooting/
+│   ├── deployment/
+│   └── images/               # Screenshots used in this README
+├── mongo-dockerfile/
+├── .github/workflows/
+├── Dockerfile
+├── docker-compose.yml
+├── .env.example
+└── README.md
 ```
 
-> The app image is built with `COPY . .`, so it bakes in a snapshot of the
-> source. If you edit files like `public/script.js`, re-run with `--build`
-> (or `docker compose up --build`) — a plain `up` will keep serving the old
-> code from the existing image.
+---
 
-### Option 2: Node.js directly (no Docker)
+## Application
 
-Requires Node.js 18+ and a running MongoDB instance you can connect to.
+Employee Management REST API with a lightweight web UI.
 
-```bash
-npm install
-cp .env.example .env   # edit MONGO_URI to point at your MongoDB instance
-npm start
-```
+**Features:** CRUD for employees (name, email, department, role, salary), health endpoint, MongoDB persistence, environment-based configuration.
 
-For auto-restart during development:
+![Application UI](https://raw.githubusercontent.com/Maadhav3112/Employee-Devops-Thikse/master/docs/images/app_v1_ui.png)
 
-```bash
-npm run dev
-```
+*Employee roster UI — list, search, edit, remove*
 
-- Frontend: `http://localhost:3000`
-- API: `http://localhost:3000/api/employees`
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/health` | Liveness / health check |
+| GET | `/api/employees` | List employees |
+| POST | `/api/employees` | Create employee |
+| GET | `/api/employees/:id` | Get one |
+| PUT | `/api/employees/:id` | Update |
+| DELETE | `/api/employees/:id` | Delete |
 
-### Running tests
+---
 
-```bash
-npm test
-```
-
-## Environment variables
-
-| Variable              | Description                              | Example                                                              |
-|------------------------|--------------------------------------------|------------------------------------------------------------------------|
-| `PORT`                 | Port the server listens on                | `3000`                                                                  |
-| `MONGO_ROOT_USER`      | MongoDB root username (Docker Compose)    | `admin`                                                                 |
-| `MONGO_ROOT_PASSWORD`  | MongoDB root password (Docker Compose)    | `password`                                                              |
-| `MONGO_URI`            | Full MongoDB connection string            | `mongodb://admin:password@localhost:27017/employeedb?authSource=admin` |
-
-See `.env.example` for details, including the connection string format for
-Docker Compose (`mongo` as hostname) vs. running directly on your machine
-(`localhost`).
-
-## Available API endpoints
-
-| Method | Endpoint              | Description                |
-|--------|------------------------|------------------------------|
-| GET    | `/`                    | Frontend (roster UI)        |
-| GET    | `/api`                 | API info                    |
-| GET    | `/health`              | Health check (for probes)   |
-| POST   | `/api/employees`       | Create an employee          |
-| GET    | `/api/employees`       | List all employees          |
-| GET    | `/api/employees/:id`   | Get one employee             |
-| PUT    | `/api/employees/:id`   | Update an employee          |
-| DELETE | `/api/employees/:id`   | Delete an employee          |
-
-All responses follow the shape `{ success: boolean, data?: ..., error?: string }`.
-
-### Employee fields
-
-| Field        | Type   | Required | Notes                        |
-|--------------|--------|----------|--------------------------------|
-| `name`       | String | Yes      |                                 |
-| `email`      | String | Yes      | Must be unique                 |
-| `department` | String | Yes      |                                 |
-| `role`       | String | No       | Defaults to `"Employee"`       |
-| `salary`     | Number | No       | Defaults to `0`, must be ≥ 0   |
-
-`createdAt` / `updatedAt` timestamps are added automatically.
-
-### Example: create an employee
+## Local Development (Docker Compose)
 
 ```bash
-curl -X POST http://localhost:9500/api/employees \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Jane Doe","email":"jane@example.com","department":"Engineering","role":"Backend Developer","salary":75000}'
+cp .env.example .env    # set MONGO_ROOT_USER / MONGO_ROOT_PASSWORD
+docker compose up --build
 ```
 
-### Example: list employees
+- Frontend / API: `http://localhost:9500`
+- Health: `http://localhost:9500/health`
+- MongoDB: `localhost:20000` (if exposed)
+
+Data persists across restarts via Docker volumes.
+
+---
+
+## CI/CD Pipeline
+
+Pipeline stages:
+
+**Checkout → Dependencies → Lint → Unit Tests → Build → Docker Build → Container Test → Security Scan → Push**
+
+![GitLab CI project](https://raw.githubusercontent.com/Maadhav3112/Employee-Devops-Thikse/master/docs/images/cicd1.png)
+
+*GitLab project — Pipelines, Jobs, Deploy*
+
+![CI pipeline jobs](https://raw.githubusercontent.com/Maadhav3112/Employee-Devops-Thikse/master/docs/images/cicd2.png)
+
+*Pipeline / jobs view*
+
+- Unit tests live under `tests/unit/`
+- Container smoke test: `tests/container/smoke_test.sh` (starts image, checks `/health`)
+- Security: dependency scan, image scan, secret detection
+- Pipeline fails on critical stage failures
+
+Config: `.gitlab-ci.yml` and/or `.github/workflows/ci.yml`
+
+---
+
+## GitOps with Argo CD
+
+Desired state is in Git; Argo CD reconciles the cluster continuously.
+
+![Argo CD Applications](https://raw.githubusercontent.com/Maadhav3112/Employee-Devops-Thikse/master/docs/images/argo_apps.png)
+
+*Argo CD — sync status and health*
+
+![Argo CD v2 sync](https://raw.githubusercontent.com/Maadhav3112/Employee-Devops-Thikse/master/docs/images/argo_v2_sync.png)
+
+*Upgrade to v2.0 detected and synced*
+
+![Git commit – upgrade to v2.0](https://raw.githubusercontent.com/Maadhav3112/Employee-Devops-Thikse/master/docs/images/app_v2_commit.png)
+
+*Git history showing the v2.0 upgrade commit*
+
+![Argo CD v2 – application detail](https://raw.githubusercontent.com/Maadhav3112/Employee-Devops-Thikse/master/docs/images/argo_v2_detail1.png)
+
+*Argo CD application detail after v2.0 deployment*
+
+![Argo CD v2 – resource health](https://raw.githubusercontent.com/Maadhav3112/Employee-Devops-Thikse/master/docs/images/argo_v2_detail2.png)
+
+*Resource health and sync status for v2.0*
+
+![Argo CD v2 – pods/containers](https://raw.githubusercontent.com/Maadhav3112/Employee-Devops-Thikse/master/docs/images/argo_v2_detail3.png)
+
+*Pod and container status under the v2.0 revision*
+
+![Argo CD v2 – healthy confirmation](https://raw.githubusercontent.com/Maadhav3112/Employee-Devops-Thikse/master/docs/images/argo_v2_detail4.png)
+
+*Final confirmation of healthy v2.0 deployment*
+
+![Application logs via Argo CD](https://raw.githubusercontent.com/Maadhav3112/Employee-Devops-Thikse/master/docs/images/argo_logs.png)
+
+*Structured health-check logs (`GET /health`)*
+
+**Version flow:** v1.0 (stable) → v2.0 (upgrade) → rollback via Git revision or Argo CD history.
+
+---
+
+## Kubernetes (EKS)
+
+- Namespace isolation  
+- Deployment with **≥ 2 replicas**  
+- Service, ConfigMap, Secret  
+- Liveness & Readiness probes  
+- Resource requests/limits  
+- Persistent storage for MongoDB where required  
+
+![EKS nodes Ready](https://raw.githubusercontent.com/Maadhav3112/Employee-Devops-Thikse/master/docs/images/eks_nodes2.png)
+
+*EKS nodes registered and Ready*
+
+![EKS pods](https://raw.githubusercontent.com/Maadhav3112/Employee-Devops-Thikse/master/docs/images/eks_pods.png)
+
+*Multiple application replicas healthy*
+
+**Self-healing verified:**
+
+- Delete pod → Deployment recreates it  
+- Container crash → restart + probes recover  
+- Readiness failure → pod removed from Service endpoints  
+
+---
+
+## Infrastructure as Code (Terraform)
+
+Version-controlled, repeatable infrastructure (IAM roles/users, EKS-related resources, environment separation concepts).
+
+![Terraform plan](https://raw.githubusercontent.com/Maadhav3112/Employee-Devops-Thikse/master/docs/images/tf_plan.png)
+
+*terraform plan — preview of changes*
+
+![Terraform apply](https://raw.githubusercontent.com/Maadhav3112/Employee-Devops-Thikse/master/docs/images/tf_apply6.png)
+
+*terraform apply completed*
+
+---
+
+## Monitoring (Datadog)
+
+**Deploy → Observe → Detect → Investigate**
+
+Datadog Agent installed via **Datadog Operator** + `DatadogAgent` CR (`monitoring/datadog/datadog-agent.yaml`).
+
+Setup summary:
+
+1. `kubectl config set-context --current --namespace=datadog-agent`
+2. Create secret (`api-key` + `app-key`)
+3. Apply `DatadogAgent` manifest (APM + log collection)
+4. Verify pods / DaemonSet
+5. Confirm metrics & logs in Datadog UI
+
+![Datadog pods view](https://raw.githubusercontent.com/Maadhav3112/Employee-Devops-Thikse/master/docs/images/dd_pods.png)
+
+*Infrastructure — pods, status, CPU/memory*
+
+![Datadog dashboard](https://raw.githubusercontent.com/Maadhav3112/Employee-Devops-Thikse/master/docs/images/dd_dashboard.png)
+
+*Resource utilization dashboard*
+
+![CPU metrics](https://raw.githubusercontent.com/Maadhav3112/Employee-Devops-Thikse/master/docs/images/dd_cpu.png)
+
+*CPU usage panels*
+
+Signals monitored: CPU, memory, restart counts, readiness, structured logs.
+
+---
+
+## Security
+
+| Control | Implementation |
+|---------|----------------|
+| Non-root containers | Dockerfile `USER` |
+| Secrets vs config | Kubernetes Secret vs ConfigMap |
+| No secrets in images | Injected at runtime |
+| CI scans | Dependency + image + secret detection |
+| Least-privilege IAM | Dedicated node role + Terraform admin role |
+
+See `docs/security/` for full details.
+
+---
+
+## Rollback
 
 ```bash
-curl http://localhost:9500/api/employees
+# Via helper script
+./scripts/rollback.sh v1.0
+
+# Or Argo CD
+argocd app history <app-name>
+argocd app rollback <app-name> <history-id>
 ```
 
-## API testing evidence
+Demonstrated path: deploy v1 → deploy v2 → rollback to v1.
 
-The sequence below exercises every endpoint end-to-end against a running
-container (`http://localhost:9500`). Run in order — the `_id` returned by
-the create step is reused in the following requests.
+---
 
-**1. Health check**
+## Challenges & Solutions
+
+| Problem | Solution |
+|---------|----------|
+| **EKS nodes not joining** | Missing IAM policies on node role → attached `AmazonEKSWorkerNodePolicy`, `AmazonEC2ContainerRegistryReadOnly`, `AmazonEKS_CNI_Policy` |
+| **Terraform apply failures** | Insufficient IAM → dedicated `Terraform.admin` role + iterative plan/apply |
+| **Argo CD OutOfSync / flapping** | Image tag mismatch + probe timeouts → aligned tags, tuned probes, hard refresh |
+| **Datadog pods not visible** | Missing RBAC / agent config → fixed ClusterRole, verified API key, waited for scrape |
+
+Full write-ups: `docs/troubleshooting/`
+
+---
+
+## Documentation
+
+| Path | Content |
+|------|---------|
+| `docs/architecture/` | Application, container, K8s, CI/CD, cloud design |
+| `docs/security/` | Security architecture, secrets, scanning |
+| `docs/troubleshooting/` | EKS IAM, Terraform, Argo CD, Datadog, failures |
+| `docs/deployment/` | Compose, K8s deploy, rollback, env config |
+| `monitoring/` | Datadog setup steps, probes, alerts, logs |
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Docker & Docker Compose  
+- Node.js 18+ (for local non-Docker runs)  
+- `kubectl` + access to an EKS cluster (for K8s)  
+- Terraform (for IaC)  
+- Datadog account (for monitoring)  
+
+### Quick start (local)
 
 ```bash
-curl -i http://localhost:9500/health
+git clone https://github.com/Maadhav3112/Employee-Devops-Thikse.git
+cd Employee-Devops-Thikse
+cp .env.example .env
+docker compose up --build
 ```
 
-**2. Create an employee**
+Open http://localhost:9500
+
+### Useful scripts
 
 ```bash
-curl -i -X POST http://localhost:9500/api/employees \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Jane Doe","email":"jane@example.com","department":"Engineering","role":"Backend Developer","salary":75000}'
+./scripts/build.sh v1.0
+./scripts/test.sh
+./scripts/health-check.sh http://localhost:9500
+./scripts/deploy.sh
+./scripts/rollback.sh v1.0
 ```
 
-Copy the `_id` from the response for the next steps.
+---
 
-**3. List all employees**
+## Author
 
-```bash
-curl -i http://localhost:9500/api/employees
-```
+**Madhav** — Advanced DevOps Technical Assignment  
 
-**4. Get one employee by ID**
-
-```bash
-curl -i http://localhost:9500/api/employees/PASTE_ID_HERE
-```
-
-**5. Update the employee**
-
-```bash
-curl -i -X PUT http://localhost:9500/api/employees/PASTE_ID_HERE \
-  -H "Content-Type: application/json" \
-  -d '{"salary":82000, "role":"Senior Backend Developer"}'
-```
-
-**6. Delete the employee**
-
-```bash
-curl -i -X DELETE http://localhost:9500/api/employees/PASTE_ID_HERE
-```
-
-**7. Confirm the delete** (list again — record should be gone)
-
-```bash
-curl -i http://localhost:9500/api/employees
-```
-
-The `-i` flag prints response headers and status codes (200/201/404, etc.)
-alongside the JSON body, which is the part worth capturing in screenshots.
+**Access boundary:** Controlled personal/internship resources only. No production credentials or internal product source code were used.
