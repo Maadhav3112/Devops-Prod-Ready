@@ -1,17 +1,15 @@
-# =========================================================
-# GitLab CI Pipeline
-# Stages: install -> test -> security_scan -> build -> docker_build -> image_scan -> container_test -> registry
-# =========================================================
-
 stages:
   - install
   - test
+  - static_analysis
   - security_scan
   - build
   - docker_build
   - image_scan
   - container_test
   - registry
+  - health_verify
+  - rollback
 
 variables:
   DOCKER_IMAGE: $DOCKERHUB_USER/employee-app
@@ -26,28 +24,28 @@ cache:
 default:
   image: node:20-alpine
 
-# ---------- 1. DEPENDENCY INSTALLATION ----------
 install_dependencies:
   stage: install
   script:
-    - cd $APP_DIR
-    - npm install
+    - cd $APP_DIR && npm install
 
-# ---------- 2. UNIT TESTS ----------
 run_tests:
   stage: test
   variables:
     MONGO_URI: "mongodb://fake:fake@fake:27017/test"
   script:
-    - cd $APP_DIR
-    - npm test
+    - cd $APP_DIR && npm test
 
-# ---------- 3. SECURITY SCAN ----------
+static_analysis:
+  stage: static_analysis
+  script:
+    - cd $APP_DIR && npx eslint .
+  allow_failure: true
+
 dependency_scan:
   stage: security_scan
   script:
-    - cd $APP_DIR
-    - npm audit --audit-level=high
+    - cd $APP_DIR && npm audit --audit-level=high
   allow_failure: true
 
 secret_detection:
@@ -59,22 +57,19 @@ secret_detection:
     - gitleaks detect --source . --verbose --no-git
   allow_failure: true
 
-# ---------- 4. BUILD ----------
 build_application:
   stage: build
   script:
-    - cd $APP_DIR
-    - node -c server.js
+    - cd $APP_DIR && node -c server.js
 
-# ---------- 5. DOCKER BUILD ----------
 build_docker_image:
   stage: docker_build
   image: docker:24
   services:
     - docker:24-dind
   script:
-    - docker build -t $DOCKER_IMAGE:$IMAGE_TAG -t $DOCKER_IMAGE:latest ./$APP_DIR
-    - docker save $DOCKER_IMAGE:$IMAGE_TAG $DOCKER_IMAGE:latest -o image.tar
+    - docker build -t $DOCKER_IMAGE:$IMAGE_TAG ./$APP_DIR
+    - docker save $DOCKER_IMAGE:$IMAGE_TAG -o image.tar
   artifacts:
     paths:
       - image.tar
@@ -82,7 +77,6 @@ build_docker_image:
   rules:
     - if: '$CI_COMMIT_BRANCH == "master"'
 
-# ---------- 6. IMAGE SCAN ----------
 image_scan:
   stage: image_scan
   image:
@@ -94,25 +88,20 @@ image_scan:
   rules:
     - if: '$CI_COMMIT_BRANCH == "master"'
 
-# ---------- 7. CONTAINER TEST ----------
 container_test:
   stage: container_test
   image: docker:24
   services:
     - docker:24-dind
-  variables:
-    MONGO_URI: "mongodb://test-mongo:27017/employeedb_citest"
   script:
     - docker load -i image.tar
     - docker network create citest-net
     - docker run -d --name test-mongo --network citest-net mongo:6
-    - docker run -d --name test-container --network citest-net -e MONGO_URI=$MONGO_URI -e PORT=3000 $DOCKER_IMAGE:$IMAGE_TAG
-    - sleep 10
-    - docker exec test-container wget -qO- http://localhost:3000/health/ready || (docker logs test-container && exit 1)
+    - docker run -d --name test-container --network citest-net -e MONGO_URI=mongodb://test-mongo:27017/test -e PORT=3000 $DOCKER_IMAGE:$IMAGE_TAG
+    - sleep 10 && docker exec test-container wget -qO- http://localhost:3000/health/ready || (docker logs test-container && exit 1)
   rules:
     - if: '$CI_COMMIT_BRANCH == "master"'
 
-# ---------- 8. REGISTRY ----------
 push_image:
   stage: registry
   image: docker:24
@@ -122,6 +111,24 @@ push_image:
     - docker load -i image.tar
     - echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USER" --password-stdin
     - docker push $DOCKER_IMAGE:$IMAGE_TAG
-    - docker push $DOCKER_IMAGE:latest
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+
+health_verification:
+  stage: health_verify
+  image: argoproj/argocd:latest
+  script:
+    - argocd login $ARGOCD_SERVER --username $ARGOCD_USER --password $ARGOCD_PASSWORD --insecure
+    - argocd app wait employee-app --health --timeout 120
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+
+rollback_deployment:
+  stage: rollback
+  image: argoproj/argocd:latest
+  script:
+    - argocd login $ARGOCD_SERVER --username $ARGOCD_USER --password $ARGOCD_PASSWORD --insecure
+    - argocd app rollback employee-app
+  when: manual
   rules:
     - if: '$CI_COMMIT_BRANCH == "master"'
