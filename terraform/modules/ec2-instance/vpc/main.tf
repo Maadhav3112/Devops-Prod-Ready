@@ -100,3 +100,13 @@ resource "aws_security_group" "app" {
     Name = "${var.project_name}-security-group"
   }
 }
+module "admin_ec2" {
+  source = "./modules/ec2-instance"
+
+  name          = "kops-admin"
+  vpc_id        = aws_vpc.main.id
+  subnet_id     = aws_subnet.public[0].id
+  key_name      = var.key_name
+  instance_type = "t3.small"
+  extra_ingress_ports = [8081, 3001, 30950]
+}
