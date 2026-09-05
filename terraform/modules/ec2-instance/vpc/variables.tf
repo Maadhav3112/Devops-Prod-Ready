@@ -7,7 +7,7 @@ variable "aws_region" {
 variable "project_name" {
   description = "Project name"
   type        = string
-  default     = "employee-api"
+  default     = "employee-app"
 }
 
 variable "vpc_cidr" {
