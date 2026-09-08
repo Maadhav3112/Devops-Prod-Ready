@@ -1,5 +1,6 @@
 # Employee Management Platform — Production-Ready DevOps
 
+[![AWS](https://img.shields.io/badge/AWS-232F3E?logo=amazon-web-services&logoColor=white)](https://aws.amazon.com/)
 [![DevOps](https://img.shields.io/badge/DevOps-Lifecycle-blue)](https://github.com/Maadhav3112/Employee-Devops-Thikse)
 [![Kubernetes](https://img.shields.io/badge/Kubernetes-EKS-326CE5?logo=kubernetes&logoColor=white)](https://aws.amazon.com/eks/)
 [![Argo CD](https://img.shields.io/badge/GitOps-Argo%20CD-EF7B4D?logo=argo&logoColor=white)](https://argo-cd.readthedocs.io/)
