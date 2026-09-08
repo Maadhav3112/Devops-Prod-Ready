@@ -105,7 +105,8 @@ Employee-Devops-Thikse/
 │   ├── unit/
 │   ├── integration/
 │   └── container/smoke_test.sh
-├── kubernetes/              # Manifests (namespace, deployment, service, ...)
+├── kubernetes/               # Manifests (namespace, deployment, service, ...)
+├── logging/                  # logs 
 ├── terraform/                # IaC
 ├── scripts/                  # build, test, deploy, rollback helpers
 ├── monitoring/               # Datadog setup, probes, alerts
@@ -114,6 +115,9 @@ Employee-Devops-Thikse/
 │       └── datadog-agent.yaml
 ├── docs/
 │   ├── architecture/
+|   ├── decisions/
+|   ├── deployment/
+|   ├── recovery/
 │   ├── security/
 │   ├── troubleshooting/
 │   ├── deployment/
