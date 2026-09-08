@@ -342,10 +342,12 @@ Full write-ups: `docs/troubleshooting/`
 | Path | Content |
 |------|---------|
 | `docs/architecture/` | Application, container, K8s, CI/CD, cloud design |
+| `docs/decisions/` | logging, datadog |
+| `docs/deployment/` | Compose, K8s deploy, rollback, env config |
+| `docs/recovery/` | s3 backup recovery, shell scripts |
 | `docs/security/` | Security architecture, secrets, scanning |
 | `docs/troubleshooting/` | EKS IAM, Terraform, Argo CD, Datadog, failures |
-| `docs/deployment/` | Compose, K8s deploy, rollback, env config |
-| `monitoring/` | Datadog setup steps, probes, alerts, logs |
+| `monitoring/` | Datadog setup steps, probes, alerts, logs, prometheus ui logs, grafanna metrics |
 
 ---
 
