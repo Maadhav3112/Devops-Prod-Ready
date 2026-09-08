@@ -128,7 +128,7 @@ rollback_deployment:
   image: argoproj/argocd:latest
   script:
     - argocd login $ARGOCD_SERVER --username $ARGOCD_USER --password $ARGOCD_PASSWORD --insecure
-    - argocd app rollback employee-app
-  when: manual
+    - argocd app rollback employee-management-app
   rules:
     - if: '$CI_COMMIT_BRANCH == "master"'
+      when: on_failure
