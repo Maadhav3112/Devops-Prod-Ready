@@ -1,18 +1,3 @@
-terraform {
-  required_version = ">= 1.5.0"
-
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
-    }
-  }
-}
-
-provider "aws" {
-  region = var.aws_region
-}
-
 # Get available Availability Zones
 data "aws_availability_zones" "available" {
   state = "available"
@@ -99,14 +84,4 @@ resource "aws_security_group" "app" {
   tags = {
     Name = "${var.project_name}-security-group"
   }
-}
-module "admin_ec2" {
-  source = "./modules/ec2-instance"
-
-  name          = "kops-admin"
-  vpc_id        = aws_vpc.main.id
-  subnet_id     = aws_subnet.public[0].id
-  key_name      = var.key_name
-  instance_type = "t3.small"
-  extra_ingress_ports = [8081, 3001, 30950]
 }
