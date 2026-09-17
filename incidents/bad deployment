@@ -1,0 +1,35 @@
+# Incident 003 — Bad Deployment
+
+| Field | Detail |
+|---|---|
+| **Incident** | Bad deployment — v2.0 crash loop after release |
+| **Date** | [fill in run date] |
+| **Severity** | High — new version unusable, prior version needed restoration |
+| **Symptoms** | Pods entered CrashLoopBackOff shortly after rollout of v2.0 |
+| **Impact** | New version undeployable; users served intermittently by remaining healthy v1.0 pods during the rolling update window |
+| **Detection** | `kubectl rollout status` did not complete within timeout; Argo CD showed Degraded |
+| **Investigation** | `kubectl describe pod` showed repeated restarts; `kubectl logs --previous` showed a startup exception caused by the deliberately broken configuration introduced in v2.0 |
+| **Root Cause** | v2.0 was deliberately built with a broken runtime configuration (invalid `MONGO_URI`) to exercise detection and rollback |
+| **Resolution** | `kubectl rollout undo` (equivalently `./scripts/rollback.sh v1.0`) restored the previous known-good ReplicaSet |
+| **Verification** | `kubectl rollout status` showed successful completion; all pods Running/Ready on v1.0; health endpoint returned 200 |
+| **Preventive Action** | Image scan and config validation added earlier in the pipeline; canary/staged rollout planned as a future improvement |
+| **Lessons Learned** | A passing CI pipeline does not guarantee a healthy runtime — configuration correctness needs its own validation step, and rollback procedures must be rehearsed, not just documented |
+
+---
+
+## Reproduction steps
+
+```bash
+kubectl set image deployment/employee-app employee-app=$REGISTRY/employee-app:v2.0 -n employee-management-app
+kubectl rollout status deployment/employee-app -n employee-management-app --timeout=60s
+kubectl get pods -n employee-management-app
+kubectl describe pod <crashing-pod> -n employee-management-app
+kubectl logs <crashing-pod> -n employee-management-app --previous
+
+# Rollback
+kubectl rollout undo deployment/employee-app -n employee-management-app
+# or: ./scripts/rollback.sh v1.0
+kubectl rollout status deployment/employee-app -n employee-management-app
+```
+
+> **Evidence to attach:** CrashLoopBackOff / Not Ready state on v2.0, and Healthy/Ready state after rollback to v1.0.

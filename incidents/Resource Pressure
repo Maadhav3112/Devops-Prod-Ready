@@ -1,0 +1,44 @@
+# Incident 004 — Resource Pressure
+
+| Field | Detail |
+|---|---|
+| **Incident** | Resource pressure — induced CPU/memory stress |
+| **Date** | [fill in run date] |
+| **Severity** | Medium — degraded performance, contained by resource limits |
+| **Symptoms** | High CPU/memory usage reported in Grafana; possible pod restarts |
+| **Impact** | Increased latency on the affected pod; other pods unaffected due to per-pod resource limits |
+| **Detection** | Grafana CPU/memory panel spike; Datadog resource utilization monitor |
+| **Investigation** | `kubectl top pods` showed usage approaching the configured limit; `kubectl describe pod` checked for Throttling/OOMKilled events |
+| **Root Cause** | Controlled stress workload (`stress --cpu 2 --vm 1`) run inside the namespace to simulate load |
+| **Resolution** | Stress pod removed; additional replica added to spread load |
+| **Verification** | CPU/memory returned to baseline in Grafana; no further restarts observed |
+| **Preventive Action** | Horizontal Pod Autoscaler planned so replica count responds automatically to sustained load |
+| **Lessons Learned** | Resource requests/limits correctly contained the impact to a single pod, confirming the hardening applied to workloads works as intended |
+
+---
+
+## Reproduction steps
+
+```bash
+# Induce controlled CPU/memory pressure
+kubectl run stress-test --image=polinux/stress -n employee-management-app --restart=Never -- \
+  stress --cpu 2 --vm 1 --vm-bytes 256M --timeout 120s
+
+# Observe
+kubectl top pods -n employee-management-app
+kubectl describe pod employee-app-<id> -n employee-management-app   # check for OOMKilled / Throttling
+kubectl get events -n employee-management-app --sort-by=.lastTimestamp
+
+# Recovery action
+kubectl scale deployment employee-app -n employee-management-app --replicas=3
+kubectl delete pod stress-test -n employee-management-app
+```
+
+## Expected vs. actual behaviour
+
+| | |
+|---|---|
+| **Expected behaviour** | Pod hits its CPU/memory limit, gets throttled or OOMKilled, and is restarted by the kubelet |
+| **Actual behaviour** | [fill in from your run — typically matches expected once requests/limits are set] |
+| **Monitoring evidence** | Grafana CPU/memory panel spike; Datadog restart-count monitor |
+| **Recovery action** | Additional replica scheduled; stress pod removed; resource usage returns to baseline |
