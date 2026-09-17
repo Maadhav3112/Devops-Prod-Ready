@@ -1,10 +1,11 @@
 # Employee Management Platform — Production-Ready DevOps
 
+[![Cloud & AWS](https://img.shields.io/badge/Cloud-AWS-232F3E?logo=amazon-web-services&logoColor=white)](https://aws.amazon.com/)
 [![DevOps](https://img.shields.io/badge/DevOps-Lifecycle-blue)](https://github.com/Maadhav3112/Employee-Devops-Thikse)
 [![Kubernetes](https://img.shields.io/badge/Kubernetes-EKS-326CE5?logo=kubernetes&logoColor=white)](https://aws.amazon.com/eks/)
 [![Argo CD](https://img.shields.io/badge/GitOps-Argo%20CD-EF7B4D?logo=argo&logoColor=white)](https://argo-cd.readthedocs.io/)
 [![Terraform](https://img.shields.io/badge/IaC-Terraform-7B42BC?logo=terraform&logoColor=white)](https://www.terraform.io/)
-[![Datadog](https://img.shields.io/badge/Observability-Datadog-632CA6?logo=datadog&logoColor=white)](https://www.datadoghq.com/)
+[![Observability and monitoring](https://img.shields.io/badge/Observability-Prometheus_%7C_Grafana_%7C_Datadog-632CA6?logo=datadog&logoColor=white)](https://www.datadoghq.com/)
 
 > **Build → Containerize → Compose → Secure → Deploy → Automate → Monitor → Troubleshoot → Document**
 
@@ -104,7 +105,8 @@ Employee-Devops-Thikse/
 │   ├── unit/
 │   ├── integration/
 │   └── container/smoke_test.sh
-├── kubernetes/              # Manifests (namespace, deployment, service, ...)
+├── kubernetes/               # Manifests (namespace, deployment, service, ...)
+├── logging/                  # logs 
 ├── terraform/                # IaC
 ├── scripts/                  # build, test, deploy, rollback helpers
 ├── monitoring/               # Datadog setup, probes, alerts
@@ -113,6 +115,9 @@ Employee-Devops-Thikse/
 │       └── datadog-agent.yaml
 ├── docs/
 │   ├── architecture/
+|   ├── decisions/
+|   ├── deployment/
+|   ├── recovery/
 │   ├── security/
 │   ├── troubleshooting/
 │   ├── deployment/
@@ -342,10 +347,12 @@ Full write-ups: `docs/troubleshooting/`
 | Path | Content |
 |------|---------|
 | `docs/architecture/` | Application, container, K8s, CI/CD, cloud design |
+| `docs/decisions/` | logging, datadog |
+| `docs/deployment/` | Compose, K8s deploy, rollback, env config |
+| `docs/recovery/` | s3 backup recovery, shell scripts |
 | `docs/security/` | Security architecture, secrets, scanning |
 | `docs/troubleshooting/` | EKS IAM, Terraform, Argo CD, Datadog, failures |
-| `docs/deployment/` | Compose, K8s deploy, rollback, env config |
-| `monitoring/` | Datadog setup steps, probes, alerts, logs |
+| `monitoring/` | Datadog setup steps, probes, alerts, logs, prometheus ui logs, grafanna metrics |
 
 ---
 
