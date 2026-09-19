@@ -1,0 +1,15 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: mongo-backup
+spec:
+  schedule: "0 2 * * *"   # cron syntax: every day at 2:00 AM
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: mongo-backup
+            image: mongo:6
+            command: ["/bin/sh", "-c", "mongodump ... && aws s3 cp ..."]
+          restartPolicy: OnFailure
